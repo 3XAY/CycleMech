@@ -66,7 +66,7 @@ fun MilesScreen(navController: NavController){
             ) {
                 Button(
                     onClick = {
-                        if(miles >= 0){
+                        if(miles >= 1){
                             miles--
                         }
                         else{

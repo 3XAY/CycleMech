@@ -39,6 +39,9 @@ class MainActivity : ComponentActivity() {
                     composable("miles_screen") {
                         MilesScreen(navController = navController)
                     }
+                    composable("parts_screen"){
+                        PartsScreen(navController = navController)
+                    }
                 }
             }
         }
@@ -69,7 +72,7 @@ fun HomeScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Button(
-                        onClick = { /* TODO: Navigate to All Parts screen */ },
+                        onClick = { navController.navigate("parts_screen") },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Parts List")
