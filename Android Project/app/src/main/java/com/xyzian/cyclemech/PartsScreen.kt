@@ -28,6 +28,8 @@ data class BikePart(
     val brand: String,
     val model: String,
     val miles: Int,
+    val startMiles: Int,
+    val endMiles: Int,
     val dateInstalled: Int,
     val endDate: Int,
     val price: Double,
@@ -35,14 +37,14 @@ data class BikePart(
 )
 
 val bikeParts = listOf(
-    BikePart(1, "Chain", "Shimano", "CN-HG54", 15, 0, 0, 25.00, "10 Speed, Amazon"),
-    BikePart(2, "Rear Derailleur", "Microshift", "Advent X", 15, 0, 0, 63.00, "With clutch, 365 Cycles"),
-    BikePart(3, "Chainring", "Deckas", "N/A", 15, 0, 0, 10.00, "38T 104BCD, Amazon"),
-    BikePart(4, "Cassette", "Microshift", "Advent X E-Series", 15, 0, 0, 47.00, "Amazon"),
-    BikePart(5, "Tubes", "Goodyear", "N/A", 15, 0, 0, 12.00, "Walmart"),
-    BikePart(6, "Tires", "Continental", "Cross King", 15, 0, 0, 63.00, "26x2.2, Al's (swapped in bike shop)"),
-    BikePart(7, "Brake pads", "CNC", "N/A", 15, 0, 0, 5.00, "Part of a whole set ($27), Amazon"),
-    BikePart(8, "Shifter", "Shimano", "SL-M6000", 15, 0, 0, 28.00, "Amazon")
+    BikePart(1, "Chain", "Shimano", "CN-HG54", 15, 0, 100,0, 0, 25.00, "10 Speed, Amazon"),
+    BikePart(2, "Rear Derailleur", "Microshift", "Advent X", 15, 0, 100, 0, 0, 63.00, "With clutch, 365 Cycles"),
+    BikePart(3, "Chainring", "Deckas", "N/A", 15, 0, 100,  0, 0, 10.00, "38T 104BCD, Amazon"),
+    BikePart(4, "Cassette", "Microshift", "Advent X E-Series", 15, 0, 100,  0, 0, 47.00, "Amazon"),
+    BikePart(5, "Tubes", "Goodyear", "N/A", 15, 0, 100,  0, 0, 12.00, "Walmart"),
+    BikePart(6, "Tires", "Continental", "Cross King", 15, 0, 100,  0, 0, 63.00, "26x2.2, Al's (swapped in bike shop)"),
+    BikePart(7, "Brake pads", "CNC", "N/A", 15, 0, 100,  0, 0, 5.00, "Part of a whole set ($27), Amazon"),
+    BikePart(8, "Shifter", "Shimano", "SL-M6000", 15, 0, 100,  0, 0, 28.00, "Amazon")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

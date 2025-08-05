@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +32,10 @@ import androidx.navigation.compose.rememberNavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MilesScreen(navController: NavController){
-    var miles by remember {mutableStateOf(0)} //Miles variable will be saved even with UI updates
+    val context = LocalContext.current
+    val prefsManager = remember {SharedPreferencesManager(context)}
+
+    var miles by remember {mutableStateOf(prefsManager.getMiles())}
 
     Scaffold(
         topBar = {
@@ -68,9 +72,11 @@ fun MilesScreen(navController: NavController){
                     onClick = {
                         if(miles >= 1){
                             miles--
+                            prefsManager.setMiles(miles)
                         }
                         else{
                             miles = 0
+                            prefsManager.setMiles(miles)
                         }
                     }
                 ) {
@@ -79,6 +85,7 @@ fun MilesScreen(navController: NavController){
                 Button(
                     onClick = {
                         miles++
+                        prefsManager.setMiles(miles)
                     }
                 ) {
                     Text(text = "+")
