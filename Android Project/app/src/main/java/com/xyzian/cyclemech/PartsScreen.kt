@@ -93,7 +93,7 @@ fun PartsScreen(navController: NavController){
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(bikeParts) { part ->
-                    BikePartItem(part = part)
+                    BikePartItem(part = part, navController = navController)
                 }
             }
         }
@@ -264,11 +264,14 @@ fun AddPartDialog(
 
 
 @Composable
-fun BikePartItem(part: BikePart) {
+fun BikePartItem(part: BikePart, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .clickable{
+                navController.navigate("part_details/${part.id}")
+            }
     ) {
         Row(
             modifier = Modifier
@@ -278,6 +281,61 @@ fun BikePartItem(part: BikePart) {
         ){
             Text(text = part.name)
             Text(text = "Miles: ${part.miles}")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PartDetailsScreen(navController: NavController, partID: Int){
+    val context = LocalContext.current
+    val partsRepository = remember {PartsRepository(context)}
+    val part = partsRepository.loadParts().find {it.id == partID}
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {Text(part?.name ?: "Part Details")},
+                navigationIcon = {
+                    IconButton(onClick = {navController.popBackStack()}) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) {
+        paddingValues ->
+        if(part!=null){
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(text = "Name: ${part.name}")
+                Text(text = "Brand: ${part.brand}")
+                Text(text = "Model: ${part.model}")
+                Text(text = "Miles: ${part.miles}")
+                Text(text = "Mile limit: ${part.endMiles}")
+                Text(text = "Miles remaining: ${part.endMiles - part.miles}")
+                Text(text = "Date Installed: ${part.dateInstalled}")
+                Text(text = "Price: ${part.price}")
+                Text(text = "Notes: ${part.notes}")
+            }
+        }
+        else{
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                Text(text = "Part not found")
+            }
         }
     }
 }

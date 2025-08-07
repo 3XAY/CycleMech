@@ -21,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.activity.compose.setContent
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.xyzian.cyclemech.ui.theme.CycleMechTheme
 
 class MainActivity : ComponentActivity() {
@@ -41,6 +43,14 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("parts_screen"){
                         PartsScreen(navController = navController)
+                    }
+                    composable(
+                        "part_details/{partID}",
+                        arguments = listOf(navArgument("partID") {type = NavType.IntType})
+                    ) { backStackEntry ->
+                        backStackEntry.arguments?.getInt("partID")?.let {partID ->
+                            PartDetailsScreen(navController, partID)
+                        }
                     }
                 }
             }
