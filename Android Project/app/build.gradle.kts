@@ -55,6 +55,8 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
+    implementation("com.google.code.gson:gson:2.10")
+    implementation("androidx.compose.material3:material3:1.3.0-alpha01")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

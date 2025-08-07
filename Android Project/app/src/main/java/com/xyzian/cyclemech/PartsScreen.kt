@@ -1,26 +1,32 @@
 package com.xyzian.cyclemech
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import android.annotation.SuppressLint
+import android.content.Context
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.random.Random
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.DateRange
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.TimeZone
 
 data class BikePart(
     val id: Int,
@@ -30,26 +36,24 @@ data class BikePart(
     val miles: Int,
     val startMiles: Int,
     val endMiles: Int,
-    val dateInstalled: Int,
-    val endDate: Int,
+    val dateInstalled: String,
     val price: Double,
     val notes: String
-)
-
-val bikeParts = listOf(
-    BikePart(1, "Chain", "Shimano", "CN-HG54", 15, 0, 100,0, 0, 25.00, "10 Speed, Amazon"),
-    BikePart(2, "Rear Derailleur", "Microshift", "Advent X", 15, 0, 100, 0, 0, 63.00, "With clutch, 365 Cycles"),
-    BikePart(3, "Chainring", "Deckas", "N/A", 15, 0, 100,  0, 0, 10.00, "38T 104BCD, Amazon"),
-    BikePart(4, "Cassette", "Microshift", "Advent X E-Series", 15, 0, 100,  0, 0, 47.00, "Amazon"),
-    BikePart(5, "Tubes", "Goodyear", "N/A", 15, 0, 100,  0, 0, 12.00, "Walmart"),
-    BikePart(6, "Tires", "Continental", "Cross King", 15, 0, 100,  0, 0, 63.00, "26x2.2, Al's (swapped in bike shop)"),
-    BikePart(7, "Brake pads", "CNC", "N/A", 15, 0, 100,  0, 0, 5.00, "Part of a whole set ($27), Amazon"),
-    BikePart(8, "Shifter", "Shimano", "SL-M6000", 15, 0, 100,  0, 0, 28.00, "Amazon")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PartsScreen(navController: NavController){
+    val context = LocalContext.current
+    val partsRepository = remember {PartsRepository(context)}
+
+    val bikeParts = remember{
+        mutableStateListOf<BikePart>().apply{
+            addAll(partsRepository.loadParts())
+        }
+    }
+    var showAddPartDialog by remember {mutableStateOf(false)}
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,7 +65,16 @@ fun PartsScreen(navController: NavController){
                             contentDescription = "Back"
             ) } }
     )
-}
+},
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    showAddPartDialog = true
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Part")
+            }
+        }
     ){
         paddingValues ->
         LazyColumn(
@@ -72,7 +85,172 @@ fun PartsScreen(navController: NavController){
                 BikePartItem(part = part)
             }
         }
+
+        if(showAddPartDialog){
+            AddPartDialog(
+                onDismiss = {showAddPartDialog = false},
+                onPartAdded = {newPart ->
+                    bikeParts.add(newPart)
+                    partsRepository.saveParts(bikeParts)
+                    showAddPartDialog = false
+                }
+            )
+        }
     }}
+
+@SuppressLint("UnrememberedMutableState")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddPartDialog(
+    onDismiss: () -> Unit,
+    onPartAdded: (BikePart) -> Unit
+){
+    val context: Context = LocalContext.current
+    val SharedPreferences = remember {SharedPreferencesManager(context)}
+
+    var partName by remember {mutableStateOf("")}
+    var partBrand by remember {mutableStateOf("")}
+    var partModel by remember {mutableStateOf("")}
+    var partEndMiles by remember {mutableStateOf("")}
+    var partDateInstalled by remember {mutableStateOf("")}
+    var partPrice by remember {mutableStateOf("")}
+    var partNotes by remember {mutableStateOf("")}
+
+    var showDatePicker by remember {mutableStateOf(false)}
+
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Add new part")
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = partName,
+                    onValueChange = { partName = it },
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = partBrand,
+                    onValueChange = { partBrand = it },
+                    label = { Text("Brand") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = partModel,
+                    onValueChange = { partModel = it },
+                    label = { Text("Model") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = partEndMiles,
+                    onValueChange = { partEndMiles = it },
+                    label = { Text("Mile limit") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = partDateInstalled,
+                    onValueChange = {partDateInstalled = it},
+                    label = {Text("Date Installed (Click Icon)")},
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {showDatePicker = true}){
+                            Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                        }
+                    }
+                )
+                OutlinedTextField(
+                    value = partPrice,
+                    onValueChange = {partPrice = it},
+                    label = { Text("Price") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = partNotes,
+                    onValueChange = {partNotes = it},
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val newPart = BikePart(
+                        id = Random.nextInt(),
+                        name = partName,
+                        brand = partBrand,
+                        model = partModel,
+                        miles = 0,
+                        startMiles = SharedPreferences.getMiles(),
+                        endMiles = partEndMiles.toIntOrNull() ?: 0,
+                        dateInstalled = partDateInstalled,
+                        price = partPrice.toDoubleOrNull() ?: 0.0,
+                        notes = partNotes
+                    )
+                    onPartAdded(newPart)
+                }
+            ){
+                Text(text = "Add")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
+
+    if(showDatePicker){
+        val datePickerState = rememberDatePickerState()
+        val confirmEnabled = derivedStateOf {datePickerState.selectedDateMillis != null}
+
+        DatePickerDialog(
+            onDismissRequest = {
+                showDatePicker = false
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                        val selectedDateMillis = datePickerState.selectedDateMillis
+                        if(selectedDateMillis != null){
+                            val calendar= Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                            calendar.timeInMillis = selectedDateMillis
+
+                            val localDate = LocalDate.of(
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH) +1,
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            )
+                            val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.US)
+                            partDateInstalled = localDate.format(formatter)
+                        }
+                    },
+                    enabled = confirmEnabled.value
+                ) {
+                    Text("Ok")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+
 
 @Composable
 fun BikePartItem(part: BikePart) {
