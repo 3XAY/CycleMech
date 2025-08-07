@@ -77,15 +77,26 @@ fun PartsScreen(navController: NavController){
         }
     ){
         paddingValues ->
-        LazyColumn(
-            modifier = Modifier.padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(bikeParts) { part ->
-                BikePartItem(part = part)
+        if(bikeParts.isEmpty()){
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(paddingValues),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                Text(text = "Add your parts here!")
             }
         }
-
+        else{
+            LazyColumn(
+                modifier = Modifier.padding(paddingValues),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(bikeParts) { part ->
+                    BikePartItem(part = part)
+                }
+            }
+        }
         if(showAddPartDialog){
             AddPartDialog(
                 onDismiss = {showAddPartDialog = false},
