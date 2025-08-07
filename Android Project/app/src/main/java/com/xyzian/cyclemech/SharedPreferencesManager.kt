@@ -11,14 +11,14 @@ class SharedPreferencesManager(context: Context){
         private const val MILES_KEY = "total_miles"
     }
 
-    fun setMiles(miles: Int) {
+    fun setMiles(miles: Float) {
         with(sharedPreferences.edit()) {
-            putInt(MILES_KEY, miles)
+            putFloat(MILES_KEY, miles)
             apply()
         }
     }
 
-    fun getMiles(): Int{
-        return sharedPreferences.getInt(MILES_KEY, 0)
+    fun getMiles(): Float{
+        return sharedPreferences.getFloat(MILES_KEY, 0.0F)
     }
 }

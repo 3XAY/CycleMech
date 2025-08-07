@@ -29,14 +29,14 @@ class PartsRepository (context: Context){
             gson.fromJson(json, type)
         } else{
             listOf(
-                BikePart(1, "Chain", "Shimano", "CN-HG54", 15, 0, 100,"", 25.00, "10 Speed, Amazon"),
-                BikePart(2, "Rear Derailleur", "Microshift", "Advent X", 15, 0, 100,"",  63.00, "With clutch, 365 Cycles"),
-                BikePart(3, "Chainring", "Deckas", "N/A", 15, 0, 100,  "", 10.00, "38T 104BCD, Amazon"),
-                BikePart(4, "Cassette", "Microshift", "Advent X E-Series", 15, 0, 100, "", 47.00, "Amazon"),
-                BikePart(5, "Tubes", "Goodyear", "N/A", 15, 0, 100,  "", 12.00, "Walmart"),
-                BikePart(6, "Tires", "Continental", "Cross King", 15, 0, 100,  "", 63.00, "26x2.2, Al's (swapped in bike shop)"),
-                BikePart(7, "Brake pads", "CNC", "N/A", 15, 0, 100,  "", 5.00, "Part of a whole set ($27), Amazon"),
-                BikePart(8, "Shifter", "Shimano", "SL-M6000", 15, 0, 100,  "", 28.00, "Amazon")
+                BikePart(1, "Chain", "Shimano", "CN-HG54", 15F, 0F, 100F,"", 25.00, "10 Speed, Amazon"),
+                BikePart(2, "Rear Derailleur", "Microshift", "Advent X", 15F, 0F, 100F,"",  63.00, "With clutch, 365 Cycles"),
+                BikePart(3, "Chainring", "Deckas", "N/A", 15F, 0F, 100F,  "", 10.00, "38T 104BCD, Amazon"),
+                BikePart(4, "Cassette", "Microshift", "Advent X E-Series", 15F, 0F, 100F, "", 47.00, "Amazon"),
+                BikePart(5, "Tubes", "Goodyear", "N/A", 15F, 0F, 100F,  "", 12.00, "Walmart"),
+                BikePart(6, "Tires", "Continental", "Cross King", 15F, 0F, 100F,  "", 63.00, "26x2.2, Al's (swapped in bike shop)"),
+                BikePart(7, "Brake pads", "CNC", "N/A", 15F, 0F, 100F,  "", 5.00, "Part of a whole set ($27), Amazon"),
+                BikePart(8, "Shifter", "Shimano", "SL-M6000", 15F, 0F, 100F,  "", 28.00, "Amazon")
             )
         }
     }

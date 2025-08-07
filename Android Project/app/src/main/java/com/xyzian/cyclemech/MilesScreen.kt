@@ -71,11 +71,11 @@ fun MilesScreen(navController: NavController){
                 Button(
                     onClick = {
                         if(miles >= 1){
-                            miles--
+                            miles-=0.5F
                             prefsManager.setMiles(miles)
                         }
                         else{
-                            miles = 0
+                            miles = 0.0F
                             prefsManager.setMiles(miles)
                         }
                     }
@@ -84,7 +84,7 @@ fun MilesScreen(navController: NavController){
                 }
                 Button(
                     onClick = {
-                        miles++
+                        miles+=0.5F
                         prefsManager.setMiles(miles)
                     }
                 ) {
