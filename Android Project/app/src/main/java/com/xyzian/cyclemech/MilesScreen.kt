@@ -34,7 +34,7 @@ import androidx.navigation.compose.rememberNavController
 fun MilesScreen(navController: NavController){
     val context = LocalContext.current
     val prefsManager = remember {SharedPreferencesManager(context)}
-
+    val partsRepository = remember {PartsRepository(context)}
     var miles by remember {mutableStateOf(prefsManager.getMiles())}
 
     Scaffold(
@@ -70,9 +70,17 @@ fun MilesScreen(navController: NavController){
             ) {
                 Button(
                     onClick = {
-                        if(miles >= 1){
+                        if(miles > 0.0F){
                             miles-=0.5F
                             prefsManager.setMiles(miles)
+
+                            val currentParts = partsRepository.loadParts()
+                            val updatedParts = currentParts.map{ part ->
+                                part.copy(
+                                    miles = if(miles - part.startMiles >= 0.0F) miles - part.startMiles else 0.0F
+                                )
+                            }
+                            partsRepository.saveParts(updatedParts)
                         }
                         else{
                             miles = 0.0F
@@ -86,6 +94,11 @@ fun MilesScreen(navController: NavController){
                     onClick = {
                         miles+=0.5F
                         prefsManager.setMiles(miles)
+                        val currentParts = partsRepository.loadParts()
+                        val updatedParts = currentParts.map{ part ->
+                            part.copy(miles = miles - part.startMiles)
+                        }
+                        partsRepository.saveParts(updatedParts)
                     }
                 ) {
                     Text(text = "+")
