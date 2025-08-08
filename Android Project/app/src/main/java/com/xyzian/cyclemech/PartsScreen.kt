@@ -310,9 +310,10 @@ fun AddPartDialog(
 fun BikePartItem(part: BikePart, navController: NavController) {
     val progress = if(part.endMiles > 0) part.miles / part.endMiles else 0f
     val progressColor = when{
-        progress >= 1F -> Color.Red
-        progress >= 0.8F -> Color(0xFFFF98000)
-        else -> Color.Green
+        progress >= 1F -> Color(0xFFFF4F30)
+        progress >= 0.9F -> Color(0xFFFF98000)
+        progress >= 0.8F -> Color(0xFFFFDD540)
+        else -> Color(0xFF8FFA61)
     }
     Card(
         modifier = Modifier
