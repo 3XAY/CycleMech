@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -49,13 +50,28 @@ data class BikePart(
 fun PartsScreen(navController: NavController){
     val context = LocalContext.current
     val partsRepository = remember {PartsRepository(context)}
+    val prefsManager = remember {SharedPreferencesManager(context)}
 
     val bikeParts = remember{
         mutableStateListOf<BikePart>().apply{
             addAll(partsRepository.loadParts())
         }
     }
+
+    val totalMiles = prefsManager.getMiles()
+    val updatedParts = bikeParts.map{ part ->
+        part.copy(miles = totalMiles - part.startMiles)
+    }
     var showAddPartDialog by remember {mutableStateOf(false)}
+    var showNotificationDialog by remember {mutableStateOf(false)}
+
+    val wornParts = updatedParts.filter {it.miles >= it.endMiles}
+
+    LaunchedEffect(key1 = wornParts){
+        if(wornParts.isNotEmpty()){
+            showNotificationDialog = true
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -80,7 +96,7 @@ fun PartsScreen(navController: NavController){
         }
     ){
         paddingValues ->
-        if(bikeParts.isEmpty()){
+        if(updatedParts.isEmpty()){
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -95,7 +111,7 @@ fun PartsScreen(navController: NavController){
                 modifier = Modifier.padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(bikeParts) { part ->
+                items(updatedParts) { part ->
                     BikePartItem(part = part, navController = navController)
                 }
             }
@@ -110,7 +126,27 @@ fun PartsScreen(navController: NavController){
                 }
             )
         }
-    }}
+    }
+    if(showNotificationDialog){
+        AlertDialog(
+            onDismissRequest = {showNotificationDialog = false},
+            title = {Text(text="Mile limit reached!")},
+            text = {
+                Column{
+                    Text("These parts have reached their mile limit:")
+                    wornParts.forEach{ part ->
+                        Text("* ${part.name} (Limit: ${part.endMiles}, Current: ${part.miles})")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {showNotificationDialog = false}){
+                    Text("Ok")
+                }
+            }
+        )
+    }
+}
 
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -265,25 +301,32 @@ fun AddPartDialog(
 }
 
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BikePartItem(part: BikePart, navController: NavController) {
+    val cardColor = when{
+        part.miles >= part.endMiles -> Color(0xFFEF9A9A)
+        part.miles >= part.endMiles * 0.8F -> Color(0xFFFFCC80)
+
+        else -> Color(0xFFC8E6C9)
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable{
-                navController.navigate("part_details/${part.id}")
-            }
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .clickable{
+                    navController.navigate("part_details/${part.id}")
+                },
             horizontalArrangement = Arrangement.SpaceBetween
         ){
-            Text(text = part.name)
-            Text(text = "Miles: ${part.miles}")
+            Text(text = part.name, color = Color.Black)
+            Text(text = "Miles: ${part.miles}", color = Color.Black)
         }
     }
 }
@@ -293,12 +336,19 @@ fun BikePartItem(part: BikePart, navController: NavController) {
 fun PartDetailsScreen(navController: NavController, partID: Int) {
     val context = LocalContext.current
     val partsRepository = remember { PartsRepository(context) }
-    var part by remember { mutableStateOf(partsRepository.loadParts().find { it.id == partID }) }
+    var prefsManager = remember {SharedPreferencesManager(context)}
+    val totalMiles = prefsManager.getMiles()
+
+    var part by remember{
+        mutableStateOf(partsRepository.loadParts().find {it.id == partID}?.let{
+            it.copy(miles = totalMiles - it.startMiles)
+        })
+    }
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showResetConfirmation by remember {mutableStateOf(false)}
 
-    val currentPart = part
 
     fun deletePart(part: BikePart) {
         val currentParts = partsRepository.loadParts().toMutableList()
@@ -306,6 +356,24 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
         partsRepository.saveParts(currentParts)
         navController.popBackStack()
     }
+
+    fun resetPartMiles(){
+        val currentPart = part ?: return
+        val currentParts = partsRepository.loadParts().toMutableList()
+        val index = currentParts.indexOfFirst {it.id == currentPart.id}
+        if(index != -1){
+            val updatedPart = currentParts[index].copy(
+                startMiles = totalMiles,
+                miles = 0.0F
+            )
+            currentParts[index] = updatedPart
+            partsRepository.saveParts(currentParts)
+            part = updatedPart.copy(miles = totalMiles - updatedPart.startMiles)
+        }
+    }
+
+    val currentPart = part
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -354,6 +422,15 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
                 Text(text = "Date Installed: ${safePart.dateInstalled}")
                 Text(text = "Price: ${safePart.price}")
                 Text(text = "Notes: ${safePart.notes}")
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {showResetConfirmation = true},
+                    modifier = Modifier.fillMaxWidth()
+                ){
+                    Text("Reset miles")
+                }
             }
         } ?: run {
             Box(
@@ -420,6 +497,31 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
             )
         }
     }
+
+    if(showResetConfirmation){
+        currentPart?.let { safePart ->
+            AlertDialog(
+                onDismissRequest = {showResetConfirmation = false},
+                title = {Text("Confirm Reset")},
+                text = {Text("Are you sure you want to reset the miles for ${safePart.name}?")},
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            resetPartMiles()
+                            showResetConfirmation = false
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {showResetConfirmation = false}){
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -429,7 +531,6 @@ fun EditPartDialog(
     onDismiss: () -> Unit,
     onPartEdited: (BikePart) -> Unit
 ){
-    val context: Context = LocalContext.current
 
     var partName by remember {mutableStateOf(part.name)}
     var partBrand by remember {mutableStateOf(part.brand)}
