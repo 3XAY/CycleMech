@@ -24,6 +24,9 @@ import java.util.Locale
 import kotlin.random.Random
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.Alignment
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -117,7 +120,7 @@ fun AddPartDialog(
     onPartAdded: (BikePart) -> Unit
 ){
     val context: Context = LocalContext.current
-    val SharedPreferences = remember {SharedPreferencesManager(context)}
+    val prefsManager = remember {SharedPreferencesManager(context)}
 
     var partName by remember {mutableStateOf("")}
     var partBrand by remember {mutableStateOf("")}
@@ -196,7 +199,7 @@ fun AddPartDialog(
                         brand = partBrand,
                         model = partModel,
                         miles = 0.0F,
-                        startMiles = SharedPreferences.getMiles(),
+                        startMiles = prefsManager.getMiles(),
                         endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
                         dateInstalled = partDateInstalled,
                         price = partPrice.toDoubleOrNull() ?: 0.0,
@@ -217,7 +220,7 @@ fun AddPartDialog(
 
     if(showDatePicker){
         val datePickerState = rememberDatePickerState()
-        val confirmEnabled = derivedStateOf {datePickerState.selectedDateMillis != null}
+        val confirmEnabled = remember {derivedStateOf {datePickerState.selectedDateMillis != null}}
 
         DatePickerDialog(
             onDismissRequest = {
@@ -287,28 +290,54 @@ fun BikePartItem(part: BikePart, navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PartDetailsScreen(navController: NavController, partID: Int){
+fun PartDetailsScreen(navController: NavController, partID: Int) {
     val context = LocalContext.current
-    val partsRepository = remember {PartsRepository(context)}
-    val part = partsRepository.loadParts().find {it.id == partID}
+    val partsRepository = remember { PartsRepository(context) }
+    var part by remember { mutableStateOf(partsRepository.loadParts().find { it.id == partID }) }
 
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+
+    val currentPart = part
+
+    fun deletePart(part: BikePart) {
+        val currentParts = partsRepository.loadParts().toMutableList()
+        currentParts.remove(part)
+        partsRepository.saveParts(currentParts)
+        navController.popBackStack()
+    }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {Text(part?.name ?: "Part Details")},
+                title = { Text(currentPart?.name ?: "Part Details") },
                 navigationIcon = {
-                    IconButton(onClick = {navController.popBackStack()}) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    currentPart?.let { safePart ->
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit part"
+                            )
+                        }
+                        IconButton(onClick = { showDeleteConfirmation = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete part"
+                            )
+                        }
+                    }
                 }
             )
         }
-    ) {
-        paddingValues ->
-        if(part!=null){
+    ) { paddingValues ->
+        currentPart?.let { safePart ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -316,30 +345,182 @@ fun PartDetailsScreen(navController: NavController, partID: Int){
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(text = "Name: ${part.name}")
-                Text(text = "Brand: ${part.brand}")
-                Text(text = "Model: ${part.model}")
-                Text(text = "Miles: ${part.miles}")
-                Text(text = "Mile limit: ${part.endMiles}")
-                Text(text = "Miles remaining: ${part.endMiles - part.miles}")
-                Text(text = "Date Installed: ${part.dateInstalled}")
-                Text(text = "Price: ${part.price}")
-                Text(text = "Notes: ${part.notes}")
+                Text(text = "Name: ${safePart.name}")
+                Text(text = "Brand: ${safePart.brand}")
+                Text(text = "Model: ${safePart.model}")
+                Text(text = "Miles: ${safePart.miles}")
+                Text(text = "Mile limit: ${safePart.endMiles}")
+                Text(text = "Miles remaining: ${safePart.endMiles - safePart.miles}")
+                Text(text = "Date Installed: ${safePart.dateInstalled}")
+                Text(text = "Price: ${safePart.price}")
+                Text(text = "Notes: ${safePart.notes}")
             }
-        }
-        else{
+        } ?: run {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 Text(text = "Part not found")
             }
         }
+
+    }
+    if (showDeleteConfirmation) {
+        currentPart?.let { safePart ->
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteConfirmation = false
+                },
+                title = {
+                    Text(text = "Confirm Part Deletion")
+                },
+                text = {
+                    Text(text = "Are you sure you want to delete ${safePart?.name}? \nThis can not be undone.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            deletePart(safePart)
+                            showDeleteConfirmation = false
+                        }
+                    ) {
+                        Text(text = "Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirmation = false
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+
+    if (showEditDialog) {
+        currentPart?.let { safePart ->
+            EditPartDialog(
+                part = safePart,
+                onDismiss = { showEditDialog = false },
+                onPartEdited = { editedPart ->
+                    val currentParts = partsRepository.loadParts().toMutableList()
+                    val index = currentParts.indexOfFirst { it.id == editedPart.id }
+                    if (index != -1) {
+                        currentParts[index] = editedPart
+                    }
+                    partsRepository.saveParts(currentParts)
+                    showEditDialog = false
+                    part = editedPart
+                }
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditPartDialog(
+    part: BikePart,
+    onDismiss: () -> Unit,
+    onPartEdited: (BikePart) -> Unit
+){
+    val context: Context = LocalContext.current
+
+    var partName by remember {mutableStateOf(part.name)}
+    var partBrand by remember {mutableStateOf(part.brand)}
+    var partModel by remember {mutableStateOf(part.model)}
+    var partEndMiles by remember {mutableStateOf(part.endMiles.toString())}
+    var partDateInstalled by remember {mutableStateOf(part.dateInstalled)}
+    var partPrice by remember {mutableStateOf(part.price.toString())}
+    var partNotes by remember {mutableStateOf(part.notes)}
+
+    var showDatePicker by remember {mutableStateOf(false)}
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {Text(text = "Edit ${part.name}")},
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)){
+                OutlinedTextField(value = partName, onValueChange = {partName = it}, label = {Text("Name")}, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = partBrand, onValueChange = {partBrand = it}, label = {Text("Brand")}, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = partModel, onValueChange = {partModel = it}, label = {Text("Model")}, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = partEndMiles, onValueChange = {partEndMiles = it}, label = {Text("Mile limit")}, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = partDateInstalled,
+                    onValueChange = {},
+                    label = {Text("Date Installed")},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {showDatePicker = true}){
+                            Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                        }
+                    }
+                )
+                OutlinedTextField(value = partPrice, onValueChange = {partPrice = it}, label = {Text("Price")}, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = partNotes, onValueChange = {partNotes = it}, label = {Text("Notes")}, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val editedPart = part.copy(
+                        name = partName,
+                        brand = partBrand,
+                        model = partModel,
+                        endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
+                        dateInstalled = partDateInstalled,
+                        price = partPrice.toDoubleOrNull() ?: 0.0,
+                        notes = partNotes
+                    )
+                    onPartEdited(editedPart)
+                }
+            ) {Text(text = "Save")}
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {Text(text = "Cancel")}
+        }
+    )
+
+    if(showDatePicker){
+        val datePickerState = rememberDatePickerState()
+        val confirmEnabled = remember {derivedStateOf {datePickerState.selectedDateMillis != null}}
+
+        DatePickerDialog(
+            onDismissRequest = {showDatePicker = false},
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                        val selectedDateMillis = datePickerState.selectedDateMillis
+                        if(selectedDateMillis != null){
+                            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                            calendar.timeInMillis = selectedDateMillis
+                            val localDate = LocalDate.of(
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH) + 1,
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            )
+                            val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.US)
+                            partDateInstalled = localDate.format(formatter)
+                        }
+                    },
+                    enabled = confirmEnabled.value
+                ) {Text("Ok")}
+            },
+            dismissButton = {
+                TextButton(onClick = {showDatePicker = false}) {Text("Cancel")}
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
 @Preview(showBackground = true)
 @Composable
 fun PartsScreenPreview(){
