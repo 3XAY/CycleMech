@@ -2,6 +2,7 @@ package com.xyzian.cyclemech
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.padding
@@ -23,11 +24,14 @@ import java.util.Calendar
 import java.util.Locale
 import kotlin.random.Random
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -304,29 +308,56 @@ fun AddPartDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BikePartItem(part: BikePart, navController: NavController) {
-    val cardColor = when{
-        part.miles >= part.endMiles -> Color(0xFFEF9A9A)
-        part.miles >= part.endMiles * 0.8F -> Color(0xFFFFCC80)
-
-        else -> Color(0xFFC8E6C9)
+    val progress = if(part.endMiles > 0) part.miles / part.endMiles else 0f
+    val progressColor = when{
+        progress >= 1F -> Color.Red
+        progress >= 0.8F -> Color(0xFFFF98000)
+        else -> Color.Green
     }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
+            .padding(horizontal = 16.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
                 .clickable{
                     navController.navigate("part_details/${part.id}")
                 },
-            horizontalArrangement = Arrangement.SpaceBetween
         ){
-            Text(text = part.name, color = Color.Black)
-            Text(text = "Miles: ${part.miles}", color = Color.Black)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Column{
+                    Text(text = part.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = "${part.brand} ${part.model}", style = MaterialTheme.typography.bodySmall)
+                }
+                Text(text = "Miles: ${part.miles}", style = MaterialTheme.typography.bodyMedium)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(50.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.LightGray)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progress.coerceIn(0F, 1F))
+                        .background(progressColor)
+                )
+            }
         }
     }
 }
@@ -336,7 +367,7 @@ fun BikePartItem(part: BikePart, navController: NavController) {
 fun PartDetailsScreen(navController: NavController, partID: Int) {
     val context = LocalContext.current
     val partsRepository = remember { PartsRepository(context) }
-    var prefsManager = remember {SharedPreferencesManager(context)}
+    val prefsManager = remember {SharedPreferencesManager(context)}
     val totalMiles = prefsManager.getMiles()
 
     var part by remember{
@@ -372,12 +403,11 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
         }
     }
 
-    val currentPart = part
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(currentPart?.name ?: "Part Details") },
+                title = { Text(part?.name ?: "Part Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -387,7 +417,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
                     }
                 },
                 actions = {
-                    currentPart?.let { safePart ->
+                    part?.let { safePart ->
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
@@ -405,7 +435,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
             )
         }
     ) { paddingValues ->
-        currentPart?.let { safePart ->
+        part?.let { safePart ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -445,7 +475,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
 
     }
     if (showDeleteConfirmation) {
-        currentPart?.let { safePart ->
+        part?.let { safePart ->
             AlertDialog(
                 onDismissRequest = {
                     showDeleteConfirmation = false
@@ -454,7 +484,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
                     Text(text = "Confirm Part Deletion")
                 },
                 text = {
-                    Text(text = "Are you sure you want to delete ${safePart?.name}? \nThis can not be undone.")
+                    Text(text = "Are you sure you want to delete ${safePart.name}? \nThis can not be undone.")
                 },
                 confirmButton = {
                     TextButton(
@@ -480,7 +510,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
     }
 
     if (showEditDialog) {
-        currentPart?.let { safePart ->
+        part?.let { safePart ->
             EditPartDialog(
                 part = safePart,
                 onDismiss = { showEditDialog = false },
@@ -499,7 +529,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
     }
 
     if(showResetConfirmation){
-        currentPart?.let { safePart ->
+        part?.let { safePart ->
             AlertDialog(
                 onDismissRequest = {showResetConfirmation = false},
                 title = {Text("Confirm Reset")},
