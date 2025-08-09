@@ -29,12 +29,13 @@ import androidx.navigation.navArgument
 import com.xyzian.cyclemech.ui.theme.CycleMechTheme
 
 class MainActivity : ComponentActivity() {
+    //This method is called on when the app starts up
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            CycleMechTheme {
-                val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "home_screen") {
+        setContent { //Everything in here defines the UI
+            CycleMechTheme { //This function applies the app's theme to everything within it such as colors and fonts
+                val navController = rememberNavController() //This is what allows you to use the system back button and go back to the correct page, it remembers your navigation states
+                NavHost(navController = navController, startDestination = "home_screen") { //This is the screen manager (kinda like window manager in Linux) that shows the correct screen (composable)
                     composable("home_screen") {
                         HomeScreen(navController = navController)
                     }
@@ -45,10 +46,10 @@ class MainActivity : ComponentActivity() {
                         PartsScreen(navController = navController)
                     }
                     composable(
-                        "part_details/{partID}",
+                        "part_details/{partID}", //The {partID} is a parameter which allows you to go to each part's specific details screen
                         arguments = listOf(navArgument("partID") {type = NavType.IntType})
                     ) { backStackEntry ->
-                        backStackEntry.arguments?.getInt("partID")?.let {partID ->
+                        backStackEntry.arguments?.getInt("partID")?.let {partID -> //Grabs the part ID and displays it if it exists
                             PartDetailsScreen(navController, partID)
                         }
                     }
@@ -58,14 +59,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class) //Enables experimental features
 @Composable
 fun HomeScreen(navController: NavController) {
-    Scaffold(
+    Scaffold( //A basic pre-made layout that gives you a structure with a top and bottom bar
         topBar = {
-            TopAppBar(
+            TopAppBar( //The top bar contains things like the back button or a settings icon (In this case, the settings icon)
                 title = { Text("CycleMech") },
-                navigationIcon = {
+                navigationIcon = { //Allows you to have an icon on the left hand side of the screen
                     IconButton(onClick = { /* TODO: Navigate to settings screen */ }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -76,8 +77,8 @@ fun HomeScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            BottomAppBar {
-                Row(
+            BottomAppBar { //A bar at the bottom of the screen (where the buttons to switch between the parts and mile screen goes)
+                Row( //Arranges the items (in this case buttons) horizontally
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
@@ -96,7 +97,7 @@ fun HomeScreen(navController: NavController) {
                 }
             }
         }
-    ) { paddingValues ->
+    ) { paddingValues -> //Used to ensure that the content doesn't overlap the top/bottom bars, contains the main content of the screen (in between the bars)
         Text(
             text = "Welcome to CycleMech",
             modifier = Modifier.padding(paddingValues)
@@ -105,7 +106,7 @@ fun HomeScreen(navController: NavController) {
 }
 
 
-@Preview(showBackground = true)
+@Preview(showBackground = true) //This annotation enables you to see the preview without having to run the app
 @Composable
 fun HomeScreenPreview() {
     val navController = rememberNavController()

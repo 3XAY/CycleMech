@@ -36,6 +36,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
 
+//Data class just makes an object with the data that needs to be stored
 data class BikePart(
     val id: Int,
     val name: String,
@@ -62,15 +63,20 @@ fun PartsScreen(navController: NavController){
         }
     }
 
+    //Gets the total miles and uses that to update the individual parts' miles
     val totalMiles = prefsManager.getMiles()
     val updatedParts = bikeParts.map{ part ->
         part.copy(miles = totalMiles - part.startMiles)
     }
+
+    //These variables control the visibility of dialogs (like adding a part or a worn out part warning)
     var showAddPartDialog by remember {mutableStateOf(false)}
     var showNotificationDialog by remember {mutableStateOf(false)}
 
+    //Filters the parts list and saves the worn out ones so an alert can be shown
     val wornParts = updatedParts.filter {it.miles >= it.endMiles}
 
+    //LaunchedEffect is something that runs when the screen is loaded and will re-ren if wornParts changes (that's what key1 does)
     LaunchedEffect(key1 = wornParts){
         if(wornParts.isNotEmpty()){
             showNotificationDialog = true
@@ -89,6 +95,7 @@ fun PartsScreen(navController: NavController){
             ) } }
     )
 },
+        //This is a button that floats above the screen's content, which makes it so you can have the screen filled with parts and still add parts
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -100,6 +107,8 @@ fun PartsScreen(navController: NavController){
         }
     ){
         paddingValues ->
+
+        //Checks if the parts list is empty, if so, display a message that tells the user to add their parts
         if(updatedParts.isEmpty()){
             Box(
                 modifier = Modifier
@@ -111,19 +120,26 @@ fun PartsScreen(navController: NavController){
             }
         }
         else{
+
+            //If the list does have items, use LazyColumn (which only renders the items that are on screen) to display the parts
             LazyColumn(
                 modifier = Modifier.padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                //items is a method that loops through the list and makes a composable for each part
                 items(updatedParts) { part ->
                     BikePartItem(part = part, navController = navController)
                 }
             }
         }
+
+        //This runs when the add button is clicked, and it runs the method to display the actual dialog with the correct parameters
         if(showAddPartDialog){
             AddPartDialog(
                 onDismiss = {showAddPartDialog = false},
                 onPartAdded = {newPart ->
+
+                    //After the new bike part is created and returned from the dialog, add it to the list, save the list, and close the dialog
                     bikeParts.add(newPart)
                     partsRepository.saveParts(bikeParts)
                     showAddPartDialog = false
@@ -131,6 +147,8 @@ fun PartsScreen(navController: NavController){
             )
         }
     }
+
+    //Alerts users if a part is worn out
     if(showNotificationDialog){
         AlertDialog(
             onDismissRequest = {showNotificationDialog = false},
@@ -139,7 +157,7 @@ fun PartsScreen(navController: NavController){
                 Column{
                     Text("These parts have reached their mile limit:")
                     wornParts.forEach{ part ->
-                        Text("* ${part.name} (Limit: ${part.endMiles}, Current: ${part.miles})")
+                        Text("* ${part.name} (Limit: ${part.endMiles}, Current: ${part.miles})") //TODO: Replace the "*" with something else that is a dot that looks a bit better
                     }
                 }
             },
@@ -152,6 +170,7 @@ fun PartsScreen(navController: NavController){
     }
 }
 
+//This is the method to actually create a new part (and the dialog)
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,6 +181,7 @@ fun AddPartDialog(
     val context: Context = LocalContext.current
     val prefsManager = remember {SharedPreferencesManager(context)}
 
+    //Variables for the text fields in the dialog
     var partName by remember {mutableStateOf("")}
     var partBrand by remember {mutableStateOf("")}
     var partModel by remember {mutableStateOf("")}
@@ -180,7 +200,7 @@ fun AddPartDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
+                OutlinedTextField( //Creates a text field with an outline
                     value = partName,
                     onValueChange = { partName = it },
                     label = { Text("Name") },
@@ -232,20 +252,20 @@ fun AddPartDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
+                onClick = { //When the confirm button is clicked, create a new part with the information entered and the total miles variable
                     val newPart = BikePart(
-                        id = Random.nextInt(),
+                        id = Random.nextInt(), //Generate a random ID for the part
                         name = partName,
                         brand = partBrand,
                         model = partModel,
                         miles = 0.0F,
-                        startMiles = prefsManager.getMiles(),
+                        startMiles = prefsManager.getMiles(),//Sets the baseline to count the miles tracked
                         endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
                         dateInstalled = partDateInstalled,
                         price = partPrice.toDoubleOrNull() ?: 0.0,
                         notes = partNotes
                     )
-                    onPartAdded(newPart)
+                    onPartAdded(newPart) //Returns the newly created part to be added to the list and saved in storage
                 }
             ){
                 Text(text = "Add")
@@ -258,6 +278,7 @@ fun AddPartDialog(
         }
     )
 
+    //Date picker dialog enables the user to easily pick the installation date with a useful menu
     if(showDatePicker){
         val datePickerState = rememberDatePickerState()
         val confirmEnabled = remember {derivedStateOf {datePickerState.selectedDateMillis != null}}
@@ -305,16 +326,18 @@ fun AddPartDialog(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+//Defines how each part should be displayed
 @Composable
 fun BikePartItem(part: BikePart, navController: NavController) {
-    val progress = if(part.endMiles > 0) part.miles / part.endMiles else 0f
+    val progress = if(part.endMiles > 0) part.miles / part.endMiles else 0f //Calculates the progress of the part's lifespan between 0 and 1
     val progressColor = when{
-        progress >= 1F -> Color(0xFFFF4F30)
-        progress >= 0.9F -> Color(0xFFFF98000)
-        progress >= 0.8F -> Color(0xFFFFDD540)
-        else -> Color(0xFF8FFA61)
+        progress >= 1F -> Color(0xFFFF4F30) //100% used = red
+        progress >= 0.9F -> Color(0xFFFF98000) //90%-100% used = orange
+        progress >= 0.8F -> Color(0xFFFFDD540) //80%-90% used = yellow
+        else -> Color(0xFF8FFA61) //Below 80% used = green
     }
+
+    //The card is a visual container where basic part details (name, miles, model, etc.) are displayed as well as the progress bar
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -323,7 +346,7 @@ fun BikePartItem(part: BikePart, navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable{
+                .clickable{ //This modifier makes it so when you click on the card (the part), it takes you to the details screen
                     navController.navigate("part_details/${part.id}")
                 },
         ){
@@ -340,22 +363,22 @@ fun BikePartItem(part: BikePart, navController: NavController) {
                 }
                 Text(text = "Miles: ${part.miles}", style = MaterialTheme.typography.bodyMedium)
             }
-            Box(
+            Box( //This box is the container that stores / creates the progress bar
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                     .height(8.dp)
                     .clip(RoundedCornerShape(50.dp))
             ) {
-                Box(
+                Box( //This is the background or empty part of the progress bar
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.LightGray)
                 )
-                Box(
+                Box( //This is the foreground or filled part of the progress bar
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(progress.coerceIn(0F, 1F))
+                        .fillMaxWidth(progress.coerceIn(0F, 1F)) //This changes the width of the progress bar or how much of it is filled
                         .background(progressColor)
                 )
             }
@@ -365,30 +388,34 @@ fun BikePartItem(part: BikePart, navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PartDetailsScreen(navController: NavController, partID: Int) {
+fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen shows ALL of the information for the given part
     val context = LocalContext.current
     val partsRepository = remember { PartsRepository(context) }
     val prefsManager = remember {SharedPreferencesManager(context)}
     val totalMiles = prefsManager.getMiles()
 
-    var part by remember{
+    var part by remember{ //Loads the part in from storage and then ensures the mile counter is accurate by recalculating it
         mutableStateOf(partsRepository.loadParts().find {it.id == partID}?.let{
             it.copy(miles = totalMiles - it.startMiles)
         })
     }
 
+    //Variables to control the visibility of their respective dialogs
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showResetConfirmation by remember {mutableStateOf(false)}
 
 
+    //Gets the list of parts from storage, finds the active part, removes it from the list, and then updates the data in storage to reflect the removal of the part
     fun deletePart(part: BikePart) {
         val currentParts = partsRepository.loadParts().toMutableList()
         currentParts.remove(part)
         partsRepository.saveParts(currentParts)
-        navController.popBackStack()
+        navController.popBackStack() //This will go back to the parts overview screen because you can't display details for a part that no longer exists
     }
 
+    //Resets the part's miles back to 0
+    //This involves changing the start miles to the current total miles of the bike and mile counter of the part back to 0
     fun resetPartMiles(){
         val currentPart = part ?: return
         val currentParts = partsRepository.loadParts().toMutableList()
@@ -436,7 +463,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
             )
         }
     ) { paddingValues ->
-        part?.let { safePart ->
+        part?.let { safePart -> //part?.let checks if the part actually exists and then runs the following code, which displays the details of the part
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -463,7 +490,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
                     Text("Reset miles")
                 }
             }
-        } ?: run {
+        } ?: run { //If the part IS somehow null, display a message telling the user that the part doesn't exist
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -475,6 +502,8 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
         }
 
     }
+
+    //Shows the delete confirmation dialog
     if (showDeleteConfirmation) {
         part?.let { safePart ->
             AlertDialog(
@@ -510,6 +539,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
         }
     }
 
+    //Shows the edit part dialog
     if (showEditDialog) {
         part?.let { safePart ->
             EditPartDialog(
@@ -529,6 +559,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
         }
     }
 
+    //Shows the reset confirmation dialog
     if(showResetConfirmation){
         part?.let { safePart ->
             AlertDialog(
@@ -557,7 +588,16 @@ fun PartDetailsScreen(navController: NavController, partID: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditPartDialog(
+fun EditPartDialog( //Basically does the same thing as the add part dialog but applies to a specific part and already has the old information prefilled in the input field
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //This calculates the progress of the part's life as a float from 0F to 1F.
+    //
     part: BikePart,
     onDismiss: () -> Unit,
     onPartEdited: (BikePart) -> Unit

@@ -32,16 +32,17 @@ import androidx.navigation.compose.rememberNavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MilesScreen(navController: NavController){
+    //Gives Android context which allows you to init the data managers (saved miles + parts)
     val context = LocalContext.current
-    val prefsManager = remember {SharedPreferencesManager(context)}
+    val prefsManager = remember {SharedPreferencesManager(context)} //Remember makes it so that instances of the data managers aren't recreated on every recomposition
     val partsRepository = remember {PartsRepository(context)}
-    var miles by remember {mutableStateOf(prefsManager.getMiles())}
+    var miles by remember {mutableStateOf(prefsManager.getMiles())} //mutableStateOf makes it so that when the value changes, it recomposes the screen
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Log your miles") },
-                navigationIcon = {
+                navigationIcon = { //The back button "pops" the screen off of the navigation stack, bringing it back to the previous screen
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -51,7 +52,7 @@ fun MilesScreen(navController: NavController){
         }
     ) {
         paddingValues ->
-        Column(
+        Column( //Arranges items vertically
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -72,9 +73,9 @@ fun MilesScreen(navController: NavController){
                     onClick = {
                         if(miles > 0.0F){
                             miles-=0.5F
-                            prefsManager.setMiles(miles)
+                            prefsManager.setMiles(miles) //Updated the miles and saved it to SharedPreferences (storage)
 
-                            val currentParts = partsRepository.loadParts()
+                            val currentParts = partsRepository.loadParts() // Updates and saves the individual parts' miles
                             val updatedParts = currentParts.map{ part ->
                                 part.copy(
                                     miles = if(miles - part.startMiles >= 0.0F) miles - part.startMiles else 0.0F
@@ -90,7 +91,7 @@ fun MilesScreen(navController: NavController){
                 ) {
                     Text(text = "-")
                 }
-                Button(
+                Button( //Does the same as removing miles
                     onClick = {
                         miles+=0.5F
                         prefsManager.setMiles(miles)
