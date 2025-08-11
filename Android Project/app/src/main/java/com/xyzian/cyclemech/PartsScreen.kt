@@ -28,10 +28,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -155,9 +160,9 @@ fun PartsScreen(navController: NavController){
             title = {Text(text="Mile limit reached!")},
             text = {
                 Column{
-                    Text("These parts have reached their mile limit:")
+                    Text("These parts have reached their mile limit:", color = MaterialTheme.colorScheme.secondary)
                     wornParts.forEach{ part ->
-                        Text("* ${part.name} (Limit: ${part.endMiles}, Current: ${part.miles})") //TODO: Replace the "*" with something else that is a dot that looks a bit better
+                        Text("‣ ${part.name} (Limit: ${part.endMiles}, Current: ${part.miles})", color = MaterialTheme.colorScheme.secondary) //TODO: Replace the "*" with something else that is a dot that looks a bit better
                     }
                 }
             },
@@ -193,90 +198,104 @@ fun AddPartDialog(
     var showDatePicker by remember {mutableStateOf(false)}
 
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(text = "Add new part")
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField( //Creates a text field with an outline
-                    value = partName,
-                    onValueChange = { partName = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = partBrand,
-                    onValueChange = { partBrand = it },
-                    label = { Text("Brand") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = partModel,
-                    onValueChange = { partModel = it },
-                    label = { Text("Model") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = partEndMiles,
-                    onValueChange = { partEndMiles = it },
-                    label = { Text("Mile limit") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = partDateInstalled,
-                    onValueChange = {partDateInstalled = it},
-                    label = {Text("Date Installed (Click Icon)")},
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        IconButton(onClick = {showDatePicker = true}){
-                            Icon(Icons.Default.DateRange, contentDescription = "Select date")
-                        }
-                    }
-                )
-                OutlinedTextField(
-                    value = partPrice,
-                    onValueChange = {partPrice = it},
-                    label = { Text("Price") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = partNotes,
-                    onValueChange = {partNotes = it},
-                    label = { Text("Notes") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { //When the confirm button is clicked, create a new part with the information entered and the total miles variable
-                    val newPart = BikePart(
-                        id = Random.nextInt(), //Generate a random ID for the part
-                        name = partName,
-                        brand = partBrand,
-                        model = partModel,
-                        miles = 0.0F,
-                        startMiles = prefsManager.getMiles(),//Sets the baseline to count the miles tracked
-                        endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
-                        dateInstalled = partDateInstalled,
-                        price = partPrice.toDoubleOrNull() ?: 0.0,
-                        notes = partNotes
-                    )
-                    onPartAdded(newPart) //Returns the newly created part to be added to the list and saved in storage
-                }
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ){
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize(),
+        ){
+            Column(
+                modifier = Modifier.padding(24.dp)
             ){
-                Text(text = "Add")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Text(text = "Add new part", style = MaterialTheme.typography.headlineMedium)
+
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField( //Creates a text field with an outline
+                        value = partName,
+                        onValueChange = { partName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = partBrand,
+                        onValueChange = { partBrand = it },
+                        label = { Text("Brand") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = partModel,
+                        onValueChange = { partModel = it },
+                        label = { Text("Model") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = partEndMiles,
+                        onValueChange = { partEndMiles = it },
+                        label = { Text("Mile limit") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = partDateInstalled,
+                        onValueChange = {partDateInstalled = it},
+                        label = {Text("Date Installed")},
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = {showDatePicker = true}){
+                                Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                            }
+                        }
+                    )
+                    OutlinedTextField(
+                        value = partPrice,
+                        onValueChange = {partPrice = it},
+                        label = { Text("Price") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = partNotes,
+                        onValueChange = {partNotes = it},
+                        label = { Text("Notes") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                }
+                Spacer(modifier = Modifier.weight(1f)) //Pushes the buttons to the bottom of the screen
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.Bottom
+                ){
+                    TextButton(onClick = onDismiss){ //Manually added the cancel button to match the AlertDialog style
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp).weight(1f))
+                    Button( //Manually added the add button to match the AlertDialog style
+                        onClick = { //When the add part button is clicked, create a new part with the information entered and the total miles variable
+                            val newPart = BikePart(
+                                id = Random.nextInt(), //Generate a random ID for the part
+                                name = partName,
+                                brand = partBrand,
+                                model = partModel,
+                                miles = 0.0F,
+                                startMiles = prefsManager.getMiles(), //Sets the baseline to count the miles tracked
+                                endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
+                                dateInstalled = partDateInstalled,
+                                price = partPrice.toDoubleOrNull() ?: 0.0,
+                                notes = partNotes
+                            )
+                            onPartAdded(newPart) //Returns the newly created part to be added to the list and saved in storage
+                        }
+                    ) {Text(text = "Add Part")}
+                }
             }
         }
-    )
+    }
 
     //Date picker dialog enables the user to easily pick the installation date with a useful menu
     if(showDatePicker){
@@ -358,10 +377,10 @@ fun BikePartItem(part: BikePart, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ){
                 Column{
-                    Text(text = part.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(text = "${part.brand} ${part.model}", style = MaterialTheme.typography.bodySmall)
+                    Text(text = part.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.inverseSurface)
+                    Text(text = "${part.brand} ${part.model}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.inverseSurface)
                 }
-                Text(text = "Miles: ${part.miles}", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Miles: ${part.miles}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.inverseSurface)
             }
             Box( //This box is the container that stores / creates the progress bar
                 modifier = Modifier
@@ -373,7 +392,7 @@ fun BikePartItem(part: BikePart, navController: NavController) {
                 Box( //This is the background or empty part of the progress bar
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.LightGray)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant)
                 )
                 Box( //This is the foreground or filled part of the progress bar
                     modifier = Modifier
@@ -435,7 +454,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(part?.name ?: "Part Details") },
+                title = { Text(part?.name ?: "Part Details", fontSize = 24.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -449,13 +468,22 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit part"
+                                contentDescription = "Edit part",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         IconButton(onClick = { showDeleteConfirmation = true }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete part"
+                                contentDescription = "Delete part",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(onClick = {showResetConfirmation = true}) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Reset miles",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -469,26 +497,17 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Text(text = "Name: ${safePart.name}")
-                Text(text = "Brand: ${safePart.brand}")
-                Text(text = "Model: ${safePart.model}")
-                Text(text = "Miles: ${safePart.miles}")
-                Text(text = "Mile limit: ${safePart.endMiles}")
-                Text(text = "Miles remaining: ${safePart.endMiles - safePart.miles}")
-                Text(text = "Date Installed: ${safePart.dateInstalled}")
-                Text(text = "Price: ${safePart.price}")
-                Text(text = "Notes: ${safePart.notes}")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {showResetConfirmation = true},
-                    modifier = Modifier.fillMaxWidth()
-                ){
-                    Text("Reset miles")
-                }
+                Text(text = "Name: ${safePart.name}", fontSize = 20.sp)
+                Text(text = "Brand: ${safePart.brand}", fontSize = 20.sp)
+                Text(text = "Model: ${safePart.model}", fontSize = 20.sp)
+                Text(text = "Miles: ${safePart.miles}", fontSize = 20.sp)
+                Text(text = "Mile limit: ${safePart.endMiles}", fontSize = 20.sp)
+                Text(text = "Miles remaining: ${safePart.endMiles - safePart.miles}", fontSize = 20.sp)
+                Text(text = "Date Installed: ${safePart.dateInstalled}", fontSize = 20.sp)
+                Text(text = "Price: ${safePart.price}", fontSize = 20.sp)
+                Text(text = "Notes: ${safePart.notes}", fontSize = 20.sp)
             }
         } ?: run { //If the part IS somehow null, display a message telling the user that the part doesn't exist
             Box(
@@ -514,7 +533,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
                     Text(text = "Confirm Part Deletion")
                 },
                 text = {
-                    Text(text = "Are you sure you want to delete ${safePart.name}? \nThis can not be undone.")
+                    Text(text = "Are you sure you want to delete ${safePart.name}? \nThis can not be undone.", color = MaterialTheme.colorScheme.inverseSurface)
                 },
                 confirmButton = {
                     TextButton(
@@ -565,7 +584,7 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
             AlertDialog(
                 onDismissRequest = {showResetConfirmation = false},
                 title = {Text("Confirm Reset")},
-                text = {Text("Are you sure you want to reset the miles for ${safePart.name}?")},
+                text = {Text("Are you sure you want to reset the miles for ${safePart.name}?", color = MaterialTheme.colorScheme.inverseSurface)},
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -589,15 +608,6 @@ fun PartDetailsScreen(navController: NavController, partID: Int) { //This screen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditPartDialog( //Basically does the same thing as the add part dialog but applies to a specific part and already has the old information prefilled in the input field
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //This calculates the progress of the part's life as a float from 0F to 1F.
-    //
     part: BikePart,
     onDismiss: () -> Unit,
     onPartEdited: (BikePart) -> Unit
@@ -613,52 +623,71 @@ fun EditPartDialog( //Basically does the same thing as the add part dialog but a
 
     var showDatePicker by remember {mutableStateOf(false)}
 
-    AlertDialog(
+    Dialog( //Allows for finer control, but a lot of stuff needs to be added to make it look like AlertDialog
         onDismissRequest = onDismiss,
-        title = {Text(text = "Edit ${part.name}")},
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)){
-                OutlinedTextField(value = partName, onValueChange = {partName = it}, label = {Text("Name")}, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = partBrand, onValueChange = {partBrand = it}, label = {Text("Brand")}, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = partModel, onValueChange = {partModel = it}, label = {Text("Model")}, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = partEndMiles, onValueChange = {partEndMiles = it}, label = {Text("Mile limit")}, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(
-                    value = partDateInstalled,
-                    onValueChange = {},
-                    label = {Text("Date Installed")},
-                    readOnly = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        IconButton(onClick = {showDatePicker = true}){
-                            Icon(Icons.Default.DateRange, contentDescription = "Select date")
-                        }
-                    }
-                )
-                OutlinedTextField(value = partPrice, onValueChange = {partPrice = it}, label = {Text("Price")}, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = partNotes, onValueChange = {partNotes = it}, label = {Text("Notes")}, modifier = Modifier.fillMaxWidth())
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val editedPart = part.copy(
-                        name = partName,
-                        brand = partBrand,
-                        model = partModel,
-                        endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
-                        dateInstalled = partDateInstalled,
-                        price = partPrice.toDoubleOrNull() ?: 0.0,
-                        notes = partNotes
-                    )
-                    onPartEdited(editedPart)
-                }
-            ) {Text(text = "Save")}
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {Text(text = "Cancel")}
-        }
-    )
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ){
+        Surface( //Gives the dialog a background + shape
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize(),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ){
+                Text(text = "Edit ${part.name}", style = MaterialTheme.typography.headlineSmall)
 
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)){
+                    OutlinedTextField(value = partName, onValueChange = {partName = it}, label = {Text("Name")}, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = partBrand, onValueChange = {partBrand = it}, label = {Text("Brand")}, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = partModel, onValueChange = {partModel = it}, label = {Text("Model")}, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = partEndMiles, onValueChange = {partEndMiles = it}, label = {Text("Mile limit")}, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = partDateInstalled,
+                        onValueChange = {},
+                        label = {Text("Date Installed")},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = {showDatePicker = true}){
+                                Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                            }
+                        }
+                    )
+                    OutlinedTextField(value = partPrice, onValueChange = {partPrice = it}, label = {Text("Price")}, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = partNotes, onValueChange = {partNotes = it}, label = {Text("Notes")}, modifier = Modifier.fillMaxWidth())
+                }
+                Spacer(modifier = Modifier.weight(1f)) //Pushes the buttons to the bottom of the screen
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.Bottom
+                ){
+                    TextButton(onClick = onDismiss){ //Manually added the cancel button to match the AlertDialog style
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp).weight(1f))
+                    Button( //Manually added the save button to match the AlertDialog style
+                        onClick = {
+                            val editedPart = part.copy(
+                                name = partName,
+                                brand = partBrand,
+                                model = partModel,
+                                endMiles = partEndMiles.toFloatOrNull() ?: 0.0F,
+                                dateInstalled = partDateInstalled,
+                                price = partPrice.toDoubleOrNull() ?: 0.0,
+                                notes = partNotes
+                            )
+                            onPartEdited(editedPart)
+                        }
+                    ) {Text(text = "Save")}
+                }
+            }
+        }
+    }
     if(showDatePicker){
         val datePickerState = rememberDatePickerState()
         val confirmEnabled = remember {derivedStateOf {datePickerState.selectedDateMillis != null}}

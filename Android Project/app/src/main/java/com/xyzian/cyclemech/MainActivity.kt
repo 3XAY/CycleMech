@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -77,10 +79,10 @@ fun HomeScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            BottomAppBar { //A bar at the bottom of the screen (where the buttons to switch between the parts and mile screen goes)
+            BottomAppBar(tonalElevation = 0.dp) { //A bar at the bottom of the screen (where the buttons to switch between the parts and mile screen goes), tonal elevation makes it so the colors match
                 Row( //Arranges the items (in this case buttons) horizontally
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
                         onClick = { navController.navigate("parts_screen") },
