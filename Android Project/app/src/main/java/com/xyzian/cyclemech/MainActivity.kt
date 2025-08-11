@@ -20,8 +20,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -64,18 +77,22 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class) //Enables experimental features
 @Composable
 fun HomeScreen(navController: NavController) {
+    val context = LocalContext.current
+    val prefsManager = remember {SharedPreferencesManager(context)} //Remember makes it so that instances of the data managers aren't recreated on every recomposition
+    var miles by remember { mutableStateOf(prefsManager.getMiles()) } //mutableStateOf makes it so that when the value changes, it recomposes the screen
+
     Scaffold( //A basic pre-made layout that gives you a structure with a top and bottom bar
         topBar = {
             TopAppBar( //The top bar contains things like the back button or a settings icon (In this case, the settings icon)
-                title = { Text("CycleMech") },
-                navigationIcon = { //Allows you to have an icon on the left hand side of the screen
+                title = { Text("") },
+                /*navigationIcon = { //Allows you to have an icon on the left hand side of the screen
                     IconButton(onClick = { /* TODO: Navigate to settings screen */ }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings Icon"
                         )
                     }
-                }
+                }*/
             )
         },
         bottomBar = {
@@ -86,24 +103,46 @@ fun HomeScreen(navController: NavController) {
                 ) {
                     Button(
                         onClick = { navController.navigate("parts_screen") },
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(65.dp)
                     ) {
-                        Text("Parts List")
+                        Text("Parts List", fontSize = 32.sp)
                     }
-                    Button(
+                    /*Button(
                         onClick = { navController.navigate("miles_screen") },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Add Miles")
-                    }
+                    }*/
                 }
             }
         }
     ) { paddingValues -> //Used to ensure that the content doesn't overlap the top/bottom bars, contains the main content of the screen (in between the bars)
-        Text(
-            text = "Welcome to CycleMech",
-            modifier = Modifier.padding(paddingValues)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ){
+            Text(
+                text = "Miles: $miles",
+                fontSize = 54.sp,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+            Button(
+                onClick = { navController.navigate("miles_screen") },
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .height(60.dp)
+                    .offset(y = 25.dp)
+            ) {
+                Text("Add Miles", fontSize = 32.sp, textAlign = TextAlign.Center)
+            }
+        }
     }
 }
 

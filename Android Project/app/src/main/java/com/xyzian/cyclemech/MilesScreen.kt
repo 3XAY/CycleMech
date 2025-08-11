@@ -1,21 +1,28 @@
 package com.xyzian.cyclemech
 
+import android.view.RoundedCorner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +46,9 @@ fun MilesScreen(navController: NavController){
     val prefsManager = remember {SharedPreferencesManager(context)} //Remember makes it so that instances of the data managers aren't recreated on every recomposition
     val partsRepository = remember {PartsRepository(context)}
     var miles by remember {mutableStateOf(prefsManager.getMiles())} //mutableStateOf makes it so that when the value changes, it recomposes the screen
+    var inputMiles by remember {mutableStateOf("")} //For the text input
+
+    LaunchedEffect(inputMiles){} //This makes sure the TextField always shows the current value of inputMiles
 
     Scaffold(
         topBar = {
@@ -47,8 +59,10 @@ fun MilesScreen(navController: NavController){
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
-            )}
-           })
+                            )
+                    }
+                }
+            )
         }
     ) {
         paddingValues ->
@@ -60,50 +74,64 @@ fun MilesScreen(navController: NavController){
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Miles: $miles",
-                fontSize = 24.sp,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Button( //Does the same as removing miles
+                shape = RoundedCornerShape(100.dp),
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                   val currentInput = inputMiles.toFloatOrNull() ?: 0.0F
+                   inputMiles = (currentInput + 0.5F).toString()
+                }
             ) {
-                Button(
-                    onClick = {
-                        if(miles > 0.0F){
-                            miles-=0.5F
-                            prefsManager.setMiles(miles) //Updated the miles and saved it to SharedPreferences (storage)
+                Text(text = "+", fontSize = 100.sp)
+            }
+            TextField( //Allows people to type their mile changes in instead of having to click
+                value = inputMiles,
+                onValueChange = {newValue ->
+                    inputMiles = newValue
+                },
+                label = {Text("Miles", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)},
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .padding(top = 32.dp)
+                    .padding(bottom = 32.dp)
+                    .fillMaxWidth(),
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(fontSize = 30.sp, textAlign = TextAlign.Center)
+            )
+            Button(
+                shape = RoundedCornerShape(100.dp),
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val currentInput = inputMiles.toFloatOrNull() ?: 0.0F
+                    inputMiles = (currentInput - 0.5F).toString()
+                }
+            ) {
+                Text(text = "-", fontSize = 100.sp)
+              }
+            Button( //Save button
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 128.dp),
+                onClick = {
+                    val milesToAdd = inputMiles.toFloatOrNull() ?: 0.0F
+                    miles += milesToAdd
 
-                            val currentParts = partsRepository.loadParts() // Updates and saves the individual parts' miles
-                            val updatedParts = currentParts.map{ part ->
-                                part.copy(
-                                    miles = if(miles - part.startMiles >= 0.0F) miles - part.startMiles else 0.0F
-                                )
-                            }
-                            partsRepository.saveParts(updatedParts)
-                        }
-                        else{
-                            miles = 0.0F
-                            prefsManager.setMiles(miles)
-                        }
+                    if (miles < 0.0F) {
+                        miles = 0.0F
                     }
-                ) {
-                    Text(text = "-")
-                }
-                Button( //Does the same as removing miles
-                    onClick = {
-                        miles+=0.5F
-                        prefsManager.setMiles(miles)
-                        val currentParts = partsRepository.loadParts()
-                        val updatedParts = currentParts.map{ part ->
-                            part.copy(miles = miles - part.startMiles)
-                        }
-                        partsRepository.saveParts(updatedParts)
+
+                    prefsManager.setMiles(miles)
+                    val currentParts = partsRepository.loadParts()
+                    val updatedParts = currentParts.map { part ->
+                        part.copy(
+                            miles = miles - part.startMiles
+                        )
                     }
-                ) {
-                    Text(text = "+")
+                    partsRepository.saveParts(updatedParts)
+                    navController.popBackStack()
                 }
+            ) {
+                Text(text = "Save", fontSize = 32.sp)
             }
         }
     }
